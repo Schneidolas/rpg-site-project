@@ -1,0 +1,22 @@
+[
+  {
+    "id": "player_schneider",
+    "nome": "Schneider",
+    "nivel": 1,
+    "xp": 0,
+    "moedas": 0,
+    "tickets": 0,
+    "elo": 1000,
+    "insignias": [],
+    "conquistas": {},
+    "estrelas_raspadinha": {},
+    "inventario_tcg": {
+      "card_1774636114554": 1
+    },
+    "fragmentos_colecionaveis": {},
+    "personalizacao": {
+      "cor_nome": "#ff0000",
+      "titulo": "O Criador do Caos"
+    }
+  }
+]

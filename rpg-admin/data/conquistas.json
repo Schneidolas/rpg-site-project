@@ -1,0 +1,56 @@
+[
+  {
+    "id": "conq_001",
+    "nome": "Primeiros Passos",
+    "descricao": "Participe de sua primeira sessão de RPG.",
+    "imagem": "/conquistas/primeiros_passos.png",
+    "tipos": [
+      "normal"
+    ]
+  },
+  {
+    "id": "conq_002",
+    "nome": "Colecionador de Lixo",
+    "descricao": "Junte 50 itens inúteis durante as campanhas.",
+    "imagem": "/conquistas/colecionador.png",
+    "tipos": [
+      "progresso",
+      "rara"
+    ],
+    "progresso_max": 50
+  },
+  {
+    "id": "conq_003",
+    "nome": "???",
+    "descricao": "???",
+    "imagem": "/conquistas/placeholder.png",
+    "tipos": [
+      "secreta"
+    ],
+    "nome_real": "Achei o Easter Egg",
+    "descricao_real": "Encontrou a piada interna que o DM escondeu no cenário.",
+    "imagem_real": "/conquistas/easter_egg.png"
+  },
+  {
+    "id": "conq_sazonal_01",
+    "nome": "Espírito Natalino",
+    "descricao": "Participou da sessão especial de Natal.",
+    "imagem": "/conquistas/natal_2024.png",
+    "tipos": [
+      "normal",
+      "sazonal"
+    ],
+    "evento": "natal"
+  },
+  {
+    "id": "conq_1774634741352",
+    "nome": "Primeiros passos",
+    "descricao": "dê deus primeiros passos, imbecil",
+    "imagem": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS8gSbGFMnkjCdLSI1FOwpWNwBqTpN902xz5Q&s",
+    "tipos": [
+      "normal",
+      "progresso"
+    ],
+    "progresso_max": 1
+  }
+]

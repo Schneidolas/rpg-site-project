@@ -1,0 +1,17 @@
+[
+  {
+    "id": "col_espada_lendaria",
+    "nome": "Espada Lendária",
+    "fragmentos_necessarios": 16
+  },
+  {
+    "id": "col_escudo_dragao",
+    "nome": "Escudo de Dragão",
+    "fragmentos_necessarios": 25
+  },
+  {
+    "id": "a",
+    "nome": "a",
+    "fragmentos_necessarios": 10
+  }
+]
