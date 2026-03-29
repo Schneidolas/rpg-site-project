@@ -3,7 +3,8 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCbodyA1DMWsIpS69eAeXIuAkV1ZD2z2ip9XEwE5/Qp
 -----END PUBLIC KEY-----`;
 
 const decryptor = new JSEncrypt();
-decryptor.setPublicKey(PUBLIC_KEY);
+const PUBLIC_KEY_CLEAN = PUBLIC_KEY.replace(/(\r\n|\n|\r|\s)/gm, "");
+decryptor.setPublicKey(PUBLIC_KEY_CLEAN);
 
 function onScanSuccess(decodedText) {
     console.log("Texto Bruto Lido do QR Code:", decodedText); 
@@ -13,8 +14,8 @@ function onScanSuccess(decodedText) {
     // A chave pública é usada para VERIFICAR a assinatura (de quem usou a chave privada)
     
     // LIMPEZA DA CHAVE PÚBLICA (Vamos fazer de novo, pq é o erro mais comum)
-    const PUBLIC_KEY_CLEAN = PUBLIC_KEY.replace(/(\r\n|\n|\r|\s)/gm, "");
-    decryptor.setPublicKey(PUBLIC_KEY_CLEAN);
+    //const PUBLIC_KEY_CLEAN = PUBLIC_KEY.replace(/(\r\n|\n|\r|\s)/gm, "");
+    //decryptor.setPublicKey(PUBLIC_KEY_CLEAN);
 
     // O JSEncrypt usa o 'verify' para checar assinaturas
     // O formato é: verify(data, signature, hashFunction, encoding)
@@ -30,8 +31,8 @@ function onScanSuccess(decodedText) {
     // *** TESTE: Se a criptografia RSA for realmente necessária: ***
     const playerID = decryptor.decrypt(decodedText); // DEIXE ESSA LINHA DE VOLTA SE VOCÊ ESTIVER USANDO CRIPTOGRAFIA RSA
 
-    if (!playerID || playerID === "false") { // "false" é o que JSEncrypt retorna se a decriptação falhar
-        alert("QR Inválido ou Chave Incorreta, seu imbecil!");
+    if (!playerID || playerID === "false") {
+        alert("QR Inválido ou Chave Incorreta, seu imbecil!"); // <-- Esse é o erro do celular
         location.reload();
         return;
     }
