@@ -1,0 +1,21 @@
+# Dependências do Node.js
+node_modules/
+
+# Arquivos de Log/Cache do Git
+.DS_Store
+.env
+
+# Arquivos de Build/Deploy que serão gerados e não precisam de controle de versão
+# (Se você for usar o build.js pra gerar o database.json, ele precisa subir, mas o .json gerado NÃO precisa ser commitado manualmente toda vez se o build for rodar no deploy)
+# Mas por agora, vamos ignorar o que não é código-fonte direto.
+
+# Arquivos de Node/Compilação que não são código-fonte
+*.log
+npm-debug.log*
+
+# Arquivos do Admin que não devem subir
+rpg-admin/data/
+rpg-admin/node_modules/
+generate_qr.js 
+server.js 
+crypto-manager.js

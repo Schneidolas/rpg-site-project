@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>RPG Admin - Painel de Controle</title>
+    <style>
+        /* TEMA WINDOWS 2000 DARK GÓTICO */
+        body { 
+            font-family: 'Tahoma', 'MS Sans Serif', sans-serif; 
+            background-color: #0a0a0a; 
+            color: #d4d0c8; 
+            margin: 20px; 
+            font-size: 14px;
+        }
+
+        /* Janelinhas clássicas */
+        .window {
+            background-color: #2b2b2b;
+            border: 2px solid;
+            border-color: #555 #000 #000 #555;
+            margin-bottom: 20px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        }
+
+        .title-bar {
+            background: linear-gradient(to right, #000080, #1084d0);
+            color: white;
+            padding: 4px 8px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .window-content {
+            padding: 15px;
+        }
+
+        /* Inputs e Botões estilo Win2k */
+        input, textarea, select { 
+            width: 100%; 
+            padding: 4px; 
+            background-color: #111; 
+            color: #fff; 
+            border: 2px inset #555; 
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        button { 
+            padding: 6px 15px; 
+            background-color: #333; 
+            color: #fff; 
+            border: 2px outset #666; 
+            cursor: pointer; 
+            font-weight: bold;
+        }
+
+        button:active {
+            border: 2px inset #666;
+            background-color: #222;
+        }
+
+        /* Layout em Grid pra não ficar uma tripa gigante */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 3px; font-weight: bold; }
+        .checkbox-group label { display: inline-block; margin-right: 15px; font-weight: normal; }
+        input[type="checkbox"] { width: auto; margin-right: 5px; }
+        
+        /* Cores de status */
+        .status { margin-top: 10px; font-weight: bold; }
+        hr { border: 0; border-top: 2px groove #444; margin: 15px 0; }
+    </style>
+</head>
+<body>
+
+    <!-- CAIXA DE FERRAMENTAS PRINCIPAL -->
+    <div class="window">
+        <div class="title-bar"><span>Painel do Deus / Editor de Almas</span></div>
+        <div class="window-content">
+            <div class="form-group" style="max-width: 400px;">
+                <label for="select-player-editor">Selecione o Otário (Jogador):</label>
+                <select id="select-player-editor">
+                    <option value="">-- Selecione --</option>
+                </select>
+            </div>
+
+            <div id="editor-container" style="display: none;">
+                <h2 id="editor-nome-jogador" style="margin-top:0; color: #4cc9f0;"></h2>
+                
+                <div class="grid-container">
+                    <!-- Coluna 1: Stats -->
+                    <div>
+                        <h3>Stats Principais</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group"><label>Nível:</label><input type="number" id="edit-nivel"></div>
+                            <div class="form-group"><label>XP Atual:</label><input type="number" id="edit-xp"></div>
+                            <div class="form-group"><label>Moedas:</label><input type="number" id="edit-moedas"></div>
+                            <div class="form-group"><label>Tickets:</label><input type="number" id="edit-tickets"></div>
+                            <div class="form-group"><label>ELO:</label><input type="number" id="edit-elo"></div>
+                        </div>
+
+                        <h4>Ajustes Rápidos (+ / -)</h4>
+                        <div style="display: flex; gap: 5px; background: #1a1a1a; padding: 10px; border: 1px inset #555;">
+                            <input type="number" id="add-xp" placeholder="XP" style="width: 60px;">
+                            <input type="number" id="add-moedas" placeholder="Moedas" style="width: 70px;">
+                            <input type="number" id="add-tickets" placeholder="Tickets" style="width: 70px;">
+                            <input type="number" id="add-elo" placeholder="ELO" style="width: 60px;">
+                            <button type="button" id="btn-aplicar-ajustes" style="color: #fca311;">Aplicar</button>
+                        </div>
+                    </div>
+
+                    <!-- Coluna 2: Inventário e Personalização -->
+                    <div>
+                        <h3>Inventário</h3>
+                        <div class="form-group">
+                            <label>Adicionar Carta TCG:</label>
+                            <div style="display: flex; gap: 5px;">
+                                <select id="select-add-carta"></select>
+                                <button type="button" id="btn-add-carta" style="color: #8ac926;">+1</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Adicionar Fragmento:</label>
+                            <div style="display: flex; gap: 5px;">
+                                <select id="select-add-fragmento"></select>
+                                <button type="button" id="btn-add-fragmento" style="color: #ffb703;">+1</button>
+                            </div>
+                        </div>
+
+                        <h3>Personalização</h3>
+                        <div class="form-group"><label>Cor do Nome (Hex):</label><input type="text" id="edit-cor-nome" placeholder="#ffffff"></div>
+                        <div class="form-group"><label>Título:</label><input type="text" id="edit-titulo"></div>
+                    </div>
+                </div>
+
+                <hr>
+                <button id="btn-salvar-tudo" style="width: 100%; padding: 10px; color: #ff4d4d;">SALVAR ALTERAÇÕES NA ALMA</button>
+                <div id="status-editor" class="status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CRIADORES DE CONTEÚDO (Divididos em 2 colunas) -->
+    <div class="grid-container">
+        
+        <!-- Criador de Conquistas -->
+        <div class="window">
+            <div class="title-bar"><span>Criador de Conquistas</span></div>
+            <div class="window-content">
+                <form id="form-conquista">
+                    <div class="form-group"><label>Nome:</label><input type="text" id="nome" required></div>
+                    <div class="form-group"><label>Descrição:</label><textarea id="descricao" rows="2" required></textarea></div>
+                    <div class="form-group"><label>Ícone URL:</label><input type="text" id="imagem"></div>
+                    <div class="form-group">
+                            <label>Ícone da Base64:</label>
+                            <input type="file" class="file-to-base64" data-target="imagem">
+                            <input type="hidden" id="imagem"> <!-- O texto Base64 vai ficar escondido aqui -->
+                            <div class="preview-img" style="margin-top:5px;"><img id="prev" src="" style="max-height:50px; display:none;"></div>
+                        </div>
+                    
+                    <div class="form-group checkbox-group" style="background: #111; padding: 5px; border: 1px inset #555;">
+                        <input type="checkbox" id="tipo-rara"> <label for="tipo-rara">Rara</label>
+                        <input type="checkbox" id="tipo-secreta"> <label for="tipo-secreta">Secreta</label>
+                        <input type="checkbox" id="tipo-progresso"> <label for="tipo-progresso">Progresso</label>
+                        <input type="checkbox" id="tipo-sazonal"> <label for="tipo-sazonal">Sazonal</label>
+                        <input type="checkbox" id="tipo-lendaria"> <label for="tipo-lendaria">Lendária</label>
+                    </div>
+
+                    <div id="campos-secretos" style="display: none; background: #331; padding: 5px;">
+                        <label>Nome Real:</label><input type="text" id="nome_real">
+                        <label>Desc Real:</label><textarea id="descricao_real" rows="1"></textarea>
+                    </div>
+                    <div id="campo-progresso" style="display: none;">
+                        <label>Progresso Máx:</label><input type="number" id="progresso_max" value="10">
+                    </div>
+                    <div id="campo-sazonal" style="display: none;">
+                        <label>Evento:</label><input type="text" id="evento" placeholder="ex: natal">
+                    </div>
+
+                    <button type="submit" style="margin-top: 10px;">Salvar Conquista</button>
+                    <div id="status" class="status"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Coluna da direita: Insígnias, Cartas e Colecionáveis -->
+        <div>
+            <div class="window">
+                <div class="title-bar"><span>Criador de Colecionáveis</span></div>
+                <div class="window-content">
+                    <form id="form-colecionavel">
+                        <div class="form-group"><label>ID (ex: col_espada):</label><input type="text" id="id-colecionavel" required></div>
+                        <div class="form-group"><label>Nome:</label><input type="text" id="nome-colecionavel" required></div>
+                        <div class="form-group"><label>Fragmentos Necessários:</label><input type="number" id="fragmentos-necessarios" value="10" required></div>
+                        <button type="submit">Salvar Colecionável</button>
+                        <div id="status-colecionavel" class="status"></div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="window">
+                <div class="title-bar"><span>Criador de Cartas TCG</span></div>
+                <div class="window-content">
+                    <form id="form-carta">
+                        <div class="form-group"><label>Nome da Carta:</label><input type="text" id="nome-carta" required></div>
+                        <div class="form-group"><label>Arte URL:</label><input type="text" id="imagem-carta" required></div>
+                        <div class="form-group">
+                            <label>Ícone da Base64:</label>
+                            <input type="file" class="file-to-base64" data-target="imagem-carta">
+                            <input type="hidden" id="imagem-carta"> <!-- O texto Base64 vai ficar escondido aqui -->
+                            <div class="preview-img" style="margin-top:5px;"><img id="prev-carta" src="" style="max-height:50px; display:none;"></div>
+                        </div>
+                        <button type="submit">Salvar Carta</button>
+                        <div id="status-carta" class="status"></div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="window">
+                <div class="title-bar"><span>Criador de Insígnias</span></div>
+                <div class="window-content">
+                    <form id="form-insignia">
+                        <div class="form-group"><label>Nome:</label><input type="text" id="nome-insignia" required></div>
+                        <div class="form-group"><label>Ícone URL:</label><input type="text" id="imagem-insignia" required></div>
+                        <div class="form-group">
+                            <label>Ícone da Base64:</label>
+                            <input type="file" class="file-to-base64" data-target="imagem-insignia">
+                            <input type="hidden" id="imagem-insignia"> <!-- O texto Base64 vai ficar escondido aqui -->
+                            <div class="preview-img" style="margin-top:5px;"><img id="prev-insignia" src="" style="max-height:50px; display:none;"></div>
+                        </div>
+                        <button type="submit">Salvar Insígnia</button>
+                        <div id="status-insignia" class="status"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div> <!-- Fim Grid -->
+
+    <script src="/admin.js"></script>
+</body>
+</html>
