@@ -1,96 +1,120 @@
 // docs/script.js
 
-// 1. SCANNER DO QR CODE (Lê Base64)
 function onScanSuccess(decodedText) {
-    console.log("QR Lido:", decodedText);
-    
-    // Esconde o scanner
     const scannerElement = document.getElementById('reader');
     if (scannerElement) scannerElement.style.display = 'none';
 
     let playerID;
-    try {
-        playerID = atob(decodedText); // Decodifica Base64
-    } catch (e) {
-        alert("O feitiço falhou! Este selo (QR) não contém uma alma válida.");
-        location.reload();
-        return;
+    try { playerID = atob(decodedText); } 
+    catch (e) {
+        alert("Selo inválido (Erro Base64)!");
+        location.reload(); return;
     }
-
-    console.log("ID Decodificado:", playerID);
     buscarJogador(playerID);
 }
 
-// 2. LOGIN MANUAL PELO ID (Fallback)
 function loginManual() {
     const inputId = document.getElementById('input-manual-id').value.trim();
-    if (!inputId) {
-        alert("Digite o Nome Verdadeiro (ID), seu herege!");
-        return;
-    }
-    console.log("Login Manual tentado para:", inputId);
+    if (!inputId) return alert("Digite o ID, herege!");
     buscarJogador(inputId);
 }
 
-// 3. A BUSCA NO BANCO DE DADOS (Usada por ambos os logins)
 function buscarJogador(playerID) {
     fetch('database.json')
-        .then(response => {
-            if (!response.ok) throw new Error("Grimório inacessível (database.json não encontrado)");
-            return response.json();
-        })
+        .then(res => res.json())
         .then(data => {
-            const listaDeJogadores = data.players;
-            if (!Array.isArray(listaDeJogadores)) {
-                throw new Error("As páginas do Grimório estão em branco! (data.players não é array)");
-            }
-
+            const listaDeJogadores = data.players || [];
             const player = listaDeJogadores.find(p => p.id === playerID);
             
             if (player) {
-                mostrarPerfil(player);
+                // Passamos o 'data' inteiro pra poder buscar infos de cartas/insígnias
+                mostrarPerfil(player, data);
             } else {
-                alert(`Nenhuma alma atende pelo nome "${playerID}" nestas terras.`);
+                alert(`Alma não encontrada!`);
                 location.reload();
             }
-        })
-        .catch(error => {
-            console.error(error);
-            alert("Erro nas magias de comunicação: " + error.message);
-        });
+        }).catch(err => alert("Erro ao ler o grimório: " + err));
 }
 
-// 4. DESENHA O PERGAMINHO
-function mostrarPerfil(p) {
+function mostrarPerfil(p, db) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('perfil-jogador').style.display = 'block';
 
+    // Header Básico
     const elNome = document.getElementById('p-nome');
-    if (elNome) {
-        elNome.textContent = p.nome;
-        // Pinta o nome se tiver cor customizada (e garante que não fique invisível no pergaminho)
-        if (p.personalizacao && p.personalizacao.cor_nome) {
-            elNome.style.color = p.personalizacao.cor_nome;
-        }
-    }
-    
-    const elTitulo = document.getElementById('p-titulo');
-    if (elTitulo) elTitulo.textContent = (p.personalizacao && p.personalizacao.titulo) ? p.personalizacao.titulo : "Novato da Guilda";
+    elNome.textContent = p.nome;
+    if (p.personalizacao && p.personalizacao.cor_nome) elNome.style.color = p.personalizacao.cor_nome;
+    document.getElementById('p-titulo').textContent = (p.personalizacao && p.personalizacao.titulo) ? p.personalizacao.titulo : "Novato";
 
-    // Puxa os dados ou coloca 0 se não existirem ainda
-    document.getElementById('p-nivel').textContent = p.nivel || 1;
-    document.getElementById('p-xp').textContent = p.xp || 0;
+    // Stats
     document.getElementById('p-moedas').textContent = p.moedas || 0;
     document.getElementById('p-tickets').textContent = p.tickets || 0;
     document.getElementById('p-elo').textContent = p.elo || 1000;
+
+    // MATEMÁTICA DO XP E NÍVEL
+    const nivelAtual = p.nivel || 1;
+    const xpAtual = p.xp || 0;
+    // Fórmula: (Nível ^ 1.5) * 500
+    const xpNecessario = Math.floor(Math.pow(nivelAtual, 1.5) * 500);
+    const porcentagem = Math.min(100, (xpAtual / xpNecessario) * 100);
+
+    document.getElementById('p-nivel').textContent = nivelAtual;
+    document.getElementById('p-xp-texto').textContent = `${xpAtual} / ${xpNecessario} XP`;
+    document.getElementById('p-xp-bar').style.width = `${porcentagem}%`;
+
+    // RENDERIZAR INSÍGNIAS
+    const divInsignias = document.getElementById('lista-insignias');
+    if (p.insignias && p.insignias.length > 0) {
+        divInsignias.innerHTML = ''; // Limpa o "fraco"
+        p.insignias.forEach(id => {
+            const insigniaDB = (db.insignias || []).find(i => i.id === id);
+            if (insigniaDB) {
+                // Se o ícone for base64 ou url, joga no src
+                divInsignias.innerHTML += `<img src="${insigniaDB.imagem}" title="${insigniaDB.nome}" class="item-icon" alt="${insigniaDB.nome}">`;
+            }
+        });
+    }
+
+    // RENDERIZAR INVENTÁRIO TCG
+    const divTcg = document.getElementById('lista-tcg');
+    if (p.inventario_tcg && Object.keys(p.inventario_tcg).length > 0) {
+        divTcg.innerHTML = '';
+        for (const [cartaId, quantidade] of Object.entries(p.inventario_tcg)) {
+            const cartaDB = (db.cartas || []).find(c => c.id === cartaId);
+            if (cartaDB) {
+                divTcg.innerHTML += `<div class="item-card"><img src="${cartaDB.imagem}" class="item-icon"> <b>${cartaDB.nome}</b> (x${quantidade})</div>`;
+            }
+        }
+    }
+
+    // RENDERIZAR COLECIONÁVEIS
+    const divCol = document.getElementById('lista-colecionaveis');
+    if (p.fragmentos_colecionaveis && Object.keys(p.fragmentos_colecionaveis).length > 0) {
+        divCol.innerHTML = '';
+        for (const [colId, qtd] of Object.entries(p.fragmentos_colecionaveis)) {
+            const colDB = (db.colecionaveis || []).find(c => c.id === colId);
+            if (colDB) {
+                const max = colDB.fragmentos_necessarios || '???';
+                divCol.innerHTML += `<div class="item-card">🧩 <b>${colDB.nome}</b>: ${qtd} / ${max} fragmentos</div>`;
+            }
+        }
+    }
+
+    // RENDERIZAR CONQUISTAS (Simplificado por agora)
+    const divConq = document.getElementById('lista-conquistas');
+    if (p.conquistas && Object.keys(p.conquistas).length > 0) {
+        divConq.innerHTML = '';
+        for (const [conqId, dadosConq] of Object.entries(p.conquistas)) {
+            const conqDB = (db.conquistas || []).find(c => c.id === conqId);
+            if (conqDB) {
+                let status = dadosConq.desbloqueada ? "✅ Desbloqueada" : `🔒 Progresso: ${dadosConq.progresso_atual}`;
+                divConq.innerHTML += `<div class="item-card">🏆 <b>${conqDB.nome}</b> - ${status}</div>`;
+            }
+        }
+    }
 }
 
-// INICIALIZA O OLHO MÁGICO (Scanner)
 document.addEventListener('DOMContentLoaded', () => {
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-        "reader", 
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        false
-    );
+    const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
     html5QrcodeScanner.render(onScanSuccess);
 });
