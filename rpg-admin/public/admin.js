@@ -85,6 +85,18 @@ function configurarEventos() {
                 getEl('edit-elo').value = player.elo || 1000;
                 getEl('edit-cor-nome').value = (player.personalizacao && player.personalizacao.cor_nome) || '#ffffff';
                 getEl('edit-titulo').value = (player.personalizacao && player.personalizacao.titulo) || '';
+
+                // --- ADICIONE ESTA PARTE PARA O AVATAR ---
+                const avatarBase64 = (player.personalizacao && player.personalizacao.avatar_url) || '';
+                getEl('edit-avatar').value = avatarBase64;
+                const prevAvatar = getEl('prev-avatar');
+                if (avatarBase64) {
+                    prevAvatar.src = avatarBase64;
+                    prevAvatar.style.display = 'block';
+                } else {
+                    prevAvatar.style.display = 'none';
+                }
+                // -----------------------------------------
                 container.style.display = 'block';
             } else if (container) {
                 container.style.display = 'none';
@@ -97,6 +109,7 @@ function configurarEventos() {
     if (btnSalvar) {
         btnSalvar.addEventListener('click', async () => {
             const playerId = getEl('select-player-editor').value;
+            // Adiciona o avatar_url no objeto de personalizacao
             const dados = {
                 nivel: parseInt(getEl('edit-nivel').value),
                 xp: parseInt(getEl('edit-xp').value),
@@ -105,7 +118,8 @@ function configurarEventos() {
                 elo: parseInt(getEl('edit-elo').value),
                 personalizacao: {
                     cor_nome: getEl('edit-cor-nome').value,
-                    titulo: getEl('edit-titulo').value
+                    titulo: getEl('edit-titulo').value,
+                    avatar_url: getEl('edit-avatar').value // <--- LINHA NOVA AQUI
                 }
             };
             const res = await fetch(`/api/player/${playerId}`, {
@@ -272,4 +286,30 @@ document.querySelectorAll('.file-to-base64').forEach(input => {
         };
         reader.readAsDataURL(this.files[0]);
     });
+});
+
+
+// --- CONVERSOR DE IMAGEM PARA BASE64 (Automático) ---
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.classList.contains('file-to-base64')) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        const targetId = e.target.getAttribute('data-target');
+        const previewId = targetId.replace('imagem', 'prev').replace('edit', 'prev'); // Gambiarra pra achar a img de preview
+
+        reader.onload = function() {
+            const base64String = reader.result;
+            const targetInput = document.getElementById(targetId);
+            if (targetInput) targetInput.value = base64String;
+            
+            const prevImg = document.getElementById(previewId);
+            if(prevImg) { 
+                prevImg.src = base64String; 
+                prevImg.style.display = 'block'; 
+            }
+        };
+        reader.readAsDataURL(file);
+    }
 });

@@ -133,7 +133,20 @@
                             </div>
                         </div>
 
+                        <!-- Personalização -->
                         <h3>Personalização</h3>
+                        
+                        <!-- NOVO CAMPO DE AVATAR AQUI -->
+                        <div class="form-group">
+                            <label>Avatar (Foto do Personagem):</label>
+                            <input type="file" class="file-to-base64" data-target="edit-avatar">
+                            <input type="hidden" id="edit-avatar">
+                            <div style="margin-top: 5px;">
+                                <img id="prev-avatar" src="" style="width: 80px; height: 80px; object-fit: cover; border-radius: 50%; display: none; border: 2px solid #fca311;">
+                            </div>
+                        </div>
+                        <!-- FIM DO NOVO CAMPO -->
+
                         <div class="form-group"><label>Cor do Nome (Hex):</label><input type="text" id="edit-cor-nome" placeholder="#ffffff"></div>
                         <div class="form-group"><label>Título:</label><input type="text" id="edit-titulo"></div>
                     </div>
