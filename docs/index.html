@@ -113,6 +113,56 @@
 
         .list-display { display: flex; flex-direction: column; gap: 10px; }
         .list-item { background: var(--bg-secondary); padding: 12px; border-radius: 4px; display: flex; align-items: center; gap: 15px; border-left: 4px solid var(--accent-color-secondary); }
+    
+        /* --- BARRA DE XP ESTILO WARCRAFT --- */
+        .wow-xp-container {
+            width: 100%;
+            height: 18px;
+            background-color: #080808; /* Fundo quase preto */
+            border: 2px solid #3a3a3a; /* Borda cinza metálica */
+            border-radius: 2px;
+            position: relative;
+            box-shadow: inset 0 0 6px #000, 0 0 0 1px #111; /* Profundidade */
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .wow-xp-fill {
+            height: 100%;
+            width: 0%;
+            /* O clássico roxo de "Rested XP" do WoW. Se quiser dourado, avisa! */
+            background: linear-gradient(to bottom, #a350f5 0%, #5d1c9e 50%, #3a0d6b 100%);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3); /* Brilhozinho no topo */
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .wow-xp-segments {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* O truque mestre: desenha uma linha preta a cada 10% pra fazer os "quadradinhos" */
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent calc(10% - 2px),
+                #222 calc(10% - 2px),
+                #222 10%
+            );
+            pointer-events: none;
+        }
+
+        .wow-xp-text {
+            text-align: center;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #d4d0c8;
+            margin-top: 4px;
+            text-shadow: 1px 1px 2px #000;
+            font-family: 'Ubuntu Mono', monospace;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
@@ -143,12 +193,16 @@
             <div class="stat-line"><span>Tickets:</span> <strong id="p-tickets">0</strong></div>
             <hr style="border-color: #333; margin: 15px 0;">
 
-            <!-- Nível e XP -->
-            <div class="stat-line">
-                <span>Nível <strong id="p-nivel">1</strong></span>
-                <span id="p-xp-texto">0/500 XP</span>
+            <!-- Nível e XP (Estilo WoW) -->
+            <div class="stat-line" style="margin-bottom: 2px;">
+                <span style="font-weight: bold; color: #fff; font-size: 1.1em;">Nível <strong id="p-nivel" style="color: #ffb703; font-size: 1.3em;">1</strong></span>
             </div>
-            <div class="xp-bar-container"><div id="p-xp-bar"></div></div>
+            
+            <div class="wow-xp-container">
+                <div id="p-xp-bar" class="wow-xp-fill"></div>
+                <div class="wow-xp-segments"></div>
+            </div>
+            <div class="wow-xp-text" id="p-xp-texto">0 / 10</div>
             
             <div class="sidebar-stats">
                  <hr style="border-color: #333; margin: 15px 0;">
