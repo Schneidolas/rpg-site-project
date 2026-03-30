@@ -2,31 +2,188 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>RPG - Perfil de Jogador</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal da Guilda - RPG</title>
+    
+    <!-- Importando o Scanner -->
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.3.2/jsencrypt.min.js"></script>
+    
+    <!-- Fontes Customizadas Fodas -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
-        body { background: #000; color: #fff; font-family: 'Courier New', monospace; text-align: center; }
-        #reader { width: 300px; margin: 20px auto; border: 2px solid #0f0; }
-        .perfil { display: none; padding: 20px; border: 1px solid #444; margin: 20px; }
-        .insignia { width: 50px; height: 50px; margin: 5px; }
+        /* TEMA GERAL - TAVERNA ESCURA */
+        body {
+            background-color: #0d0d0d;
+            background-image: radial-gradient(circle at center, #1f1a1a 0%, #000000 100%);
+            color: #eee;
+            font-family: 'Ubuntu Mono', monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3 { 
+            font-family: 'MedievalSharp', cursive; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8); 
+            margin-top: 0;
+        }
+
+        /* TELA DE LOGIN - O PORTAL MÁGICO */
+        #login-screen {
+            text-align: center;
+            background: rgba(20, 15, 25, 0.9);
+            padding: 30px;
+            border: 2px solid #5a189a;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(90, 24, 154, 0.5);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        #login-screen h1 { color: #e0aaff; font-size: 2.2em; }
+        
+        #reader { 
+            border: 2px dashed #e0aaff !important; 
+            border-radius: 10px; 
+            overflow: hidden; 
+            margin-top: 20px;
+            background: #000;
+        }
+
+        /* LOGIN MANUAL */
+        .manual-login {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px dashed #555;
+        }
+        .manual-login input {
+            padding: 10px;
+            width: 65%;
+            background: #000;
+            color: #e0aaff;
+            border: 1px solid #5a189a;
+            border-radius: 5px;
+            font-family: 'Ubuntu Mono';
+            outline: none;
+        }
+        .manual-login input:focus { box-shadow: 0 0 10px #5a189a; }
+        .manual-login button {
+            padding: 10px 15px;
+            background: #5a189a;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'MedievalSharp';
+            font-size: 1.1em;
+            transition: 0.2s;
+        }
+        .manual-login button:hover { background: #7b2cbf; transform: scale(1.05); }
+
+        /* TELA DE PERFIL - O PERGAMINHO ANTIGO */
+        #perfil-jogador {
+            display: none;
+            background-color: #e8d8b7; /* Cor base do papel envelhecido */
+            background-image: 
+                linear-gradient(90deg, rgba(139, 69, 19, 0.15) 0%, transparent 5%, transparent 95%, rgba(139, 69, 19, 0.15) 100%),
+                linear-gradient(0deg, rgba(139, 69, 19, 0.1) 0%, transparent 10%, transparent 90%, rgba(139, 69, 19, 0.1) 100%);
+            color: #3e2723; /* Tinta marrom escura */
+            padding: 40px 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.9), inset 0 0 60px rgba(139, 69, 19, 0.4);
+            border-radius: 3px;
+            position: relative;
+        }
+
+        /* Cabeçalho do Pergaminho */
+        .scroll-header {
+            text-align: center;
+            border-bottom: 2px solid #8b4513;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        #p-nome { font-size: 2.8em; margin: 0; color: #5c1605; text-shadow: none; letter-spacing: 2px;}
+        #p-titulo { font-size: 1.3em; color: #4a3b32; margin-top: 5px; font-style: italic; text-shadow: none;}
+
+        /* Status do Jogador */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            font-size: 1.2em;
+        }
+        .stat-box {
+            background: rgba(139, 69, 19, 0.08);
+            padding: 12px;
+            border: 1px solid rgba(139, 69, 19, 0.3);
+            border-radius: 4px;
+            text-shadow: none;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+        .stat-value { color: #8b0000; }
+
+        /* Botão de Fechar o Pergaminho */
+        .logout-btn {
+            margin-top: 35px;
+            width: 100%;
+            padding: 15px;
+            background: #5c1605;
+            color: #e8d8b7;
+            font-family: 'MedievalSharp';
+            font-size: 1.3em;
+            border: 2px solid #3e1004;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        }
+        .logout-btn:hover { background: #8b0000; }
     </style>
 </head>
 <body>
 
+    <!-- PORTAL DE LOGIN -->
     <div id="login-screen">
-        <h1>[ ACESSO AO PERFIL ]</h1>
-        <p>Apresente seu Cartão QR para o scanner</p>
+        <h1>Acesso ao Grimório</h1>
+        <p style="color: #aaa;">Apresente o Selo (QR) para o olho mágico...</p>
+        
         <div id="reader"></div>
+
+        <div class="manual-login">
+            <p style="color: #aaa; margin-bottom: 5px;">Ou invoque pelo Nome Verdadeiro:</p>
+            <input type="text" id="input-manual-id" placeholder="ID do Personagem">
+            <button onclick="loginManual()">Invocar</button>
+        </div>
     </div>
 
-    <div id="perfil-jogador" class="perfil">
-        <h1 id="p-nome"></h1>
-        <h3 id="p-titulo"></h3>
-        <p>Nível: <span id="p-nivel"></span> | ELO: <span id="p-elo"></span></p>
-        <div id="p-insignias"></div>
-        <!-- O resto do seu brainstorm de perfil vai aqui -->
-        <button onclick="location.reload()">Sair</button>
+    <!-- O PERGAMINHO DO JOGADOR -->
+    <div id="perfil-jogador">
+        <div class="scroll-header">
+            <h1 id="p-nome">Nome</h1>
+            <h3 id="p-titulo">Título</h3>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box"><span>Nível:</span> <span class="stat-value" id="p-nivel"></span></div>
+            <div class="stat-box"><span>XP:</span> <span class="stat-value" id="p-xp"></span></div>
+            <div class="stat-box"><span>Moedas:</span> <span class="stat-value" id="p-moedas"></span></div>
+            <div class="stat-box"><span>Tickets:</span> <span class="stat-value" id="p-tickets"></span></div>
+            <div class="stat-box" style="grid-column: span 2; justify-content: center; font-size: 1.3em;">
+                ⚔️ ELO: <span class="stat-value" id="p-elo" style="margin-left: 10px;"></span> ⚔️
+            </div>
+        </div>
+        
+        <button class="logout-btn" onclick="location.reload()">Enrolar Pergaminho</button>
     </div>
 
     <script src="script.js"></script>

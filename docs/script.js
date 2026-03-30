@@ -1,105 +1,96 @@
-// docs/script.js - VERSÃO FINAL E LIMPA! (Luna, 2024)
+// docs/script.js
 
-// --- FUNÇÃO DE LOGIN VIA QR CODE ---
+// 1. SCANNER DO QR CODE (Lê Base64)
 function onScanSuccess(decodedText) {
-    console.log("Texto Base64 Lido do QR Code:", decodedText);
+    console.log("QR Lido:", decodedText);
     
-    // Esconde o scanner pra não ficar lendo à toa
+    // Esconde o scanner
     const scannerElement = document.getElementById('reader');
-    if (scannerElement) {
-        scannerElement.style.display = 'none';
-    }
+    if (scannerElement) scannerElement.style.display = 'none';
 
     let playerID;
     try {
-        // Tenta decodificar o Base64. atob() é a função nativa do navegador pra isso.
-        playerID = atob(decodedText);
+        playerID = atob(decodedText); // Decodifica Base64
     } catch (e) {
-        // Se der erro, é porque o QR não continha um Base64 válido.
-        console.error("Erro ao decodificar Base64:", e);
-        alert("Esse QR Code tá zuado, não é Base64, seu animal!");
+        alert("O feitiço falhou! Este selo (QR) não contém uma alma válida.");
         location.reload();
         return;
     }
 
     console.log("ID Decodificado:", playerID);
+    buscarJogador(playerID);
+}
 
-    // Agora busca o jogador no nosso banco de dados estático
+// 2. LOGIN MANUAL PELO ID (Fallback)
+function loginManual() {
+    const inputId = document.getElementById('input-manual-id').value.trim();
+    if (!inputId) {
+        alert("Digite o Nome Verdadeiro (ID), seu herege!");
+        return;
+    }
+    console.log("Login Manual tentado para:", inputId);
+    buscarJogador(inputId);
+}
+
+// 3. A BUSCA NO BANCO DE DADOS (Usada por ambos os logins)
+function buscarJogador(playerID) {
     fetch('database.json')
         .then(response => {
-            if (!response.ok) {
-                throw new Error(`Deu merda no fetch: ${response.statusText}`);
-            }
+            if (!response.ok) throw new Error("Grimório inacessível (database.json não encontrado)");
             return response.json();
         })
         .then(data => {
-            if (!data || !Array.isArray(data.players)) {
-                throw new Error("Estrutura do database.json tá uma bosta, cadê o array de players?");
+            const listaDeJogadores = data.players;
+            if (!Array.isArray(listaDeJogadores)) {
+                throw new Error("As páginas do Grimório estão em branco! (data.players não é array)");
             }
 
-            const listaDeJogadores = data.players;
             const player = listaDeJogadores.find(p => p.id === playerID);
             
             if (player) {
                 mostrarPerfil(player);
             } else {
-                alert(`Jogador com ID "${playerID}" não encontrado. Tem certeza que não é um impostor?`);
+                alert(`Nenhuma alma atende pelo nome "${playerID}" nestas terras.`);
                 location.reload();
             }
         })
         .catch(error => {
-            console.error("Erro fatal ao carregar o database:", error);
-            alert("Não consegui ler o banco de dados. Vê se o build.js rodou direito, porra!");
-            location.reload();
+            console.error(error);
+            alert("Erro nas magias de comunicação: " + error.message);
         });
 }
 
-// --- FUNÇÃO PARA MOSTRAR O PERFIL NA TELA ---
+// 4. DESENHA O PERGAMINHO
 function mostrarPerfil(p) {
-    // Esconde a tela de login
-    const loginScreen = document.getElementById('login-screen');
-    if (loginScreen) loginScreen.style.display = 'none';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('perfil-jogador').style.display = 'block';
 
-    // Mostra a tela de perfil
-    const perfilDiv = document.getElementById('perfil-jogador');
-    if (perfilDiv) perfilDiv.style.display = 'block';
-
-    // Preenche os dados
-    // Adicionando checagens pra não quebrar se o elemento não existir
     const elNome = document.getElementById('p-nome');
     if (elNome) {
         elNome.textContent = p.nome;
-        // Aplica a cor personalizada, se existir
+        // Pinta o nome se tiver cor customizada (e garante que não fique invisível no pergaminho)
         if (p.personalizacao && p.personalizacao.cor_nome) {
             elNome.style.color = p.personalizacao.cor_nome;
         }
     }
     
     const elTitulo = document.getElementById('p-titulo');
-    if (elTitulo && p.personalizacao) elTitulo.textContent = p.personalizacao.titulo || '';
+    if (elTitulo) elTitulo.textContent = (p.personalizacao && p.personalizacao.titulo) ? p.personalizacao.titulo : "Novato da Guilda";
 
-    const elNivel = document.getElementById('p-nivel');
-    if (elNivel) elNivel.textContent = p.nivel || 1;
-
-    const elElo = document.getElementById('p-elo');
-    if (elElo) elElo.textContent = p.elo || 1000;
+    // Puxa os dados ou coloca 0 se não existirem ainda
+    document.getElementById('p-nivel').textContent = p.nivel || 1;
+    document.getElementById('p-xp').textContent = p.xp || 0;
+    document.getElementById('p-moedas').textContent = p.moedas || 0;
+    document.getElementById('p-tickets').textContent = p.tickets || 0;
+    document.getElementById('p-elo').textContent = p.elo || 1000;
 }
 
-
-// --- INICIALIZAÇÃO DO SCANNER DE QR CODE ---
-// Garante que o script só rode depois que a página carregou toda
+// INICIALIZA O OLHO MÁGICO (Scanner)
 document.addEventListener('DOMContentLoaded', () => {
-    // Usando uma biblioteca que comprovadamente funciona pra câmera E upload
     const html5QrcodeScanner = new Html5QrcodeScanner(
         "reader", 
-        { 
-            fps: 10, 
-            qrbox: { width: 250, height: 250 } // Configuração mais robusta
-        },
-        /* verbose= */ false
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        false
     );
-    html5QrcodeScanner.render(onScanSuccess, (error) => {
-        // Ignora erros comuns de "código não encontrado" pra não poluir o console
-        // console.warn(`Erro de scan (ignorável): ${error}`);
-    });
+    html5QrcodeScanner.render(onScanSuccess);
 });
