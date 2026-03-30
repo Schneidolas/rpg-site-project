@@ -306,6 +306,78 @@ app.get('/api/conquistas', (req, res) => {
     });
 });
 
+app.post('/api/player/:id/conquista', (req, res) => {
+    const playerId = req.params.id;
+    const { conqId, progresso } = req.body;
+
+    // Precisamos ler os players e as conquistas
+    const conquistasPath = path.join(__dirname, 'data', 'conquistas.json');
+
+    fs.readFile(playersPath, 'utf8', (err, playersData) => {
+        if (err) return res.status(500).json({ message: 'Erro ao ler players.' });
+        fs.readFile(conquistasPath, 'utf8', (err2, conqData) => {
+            if (err2) return res.status(500).json({ message: 'Erro ao ler catálogo de conquistas.' });
+
+            let players = JSON.parse(playersData || '[]');
+            const todasConquistas = JSON.parse(conqData || '[]');
+            
+            const playerIndex = players.findIndex(p => p.id === playerId);
+            if (playerIndex === -1) return res.status(404).json({ message: 'Jogador não encontrado.' });
+            
+            const p = players[playerIndex];
+            const conqInfo = todasConquistas.find(c => c.id === conqId);
+            
+            if (!conqInfo) return res.status(404).json({ message: 'Conquista não existe no catálogo!' });
+
+            // Inicializa se o coitado não tiver
+            if (!p.conquistas) p.conquistas = {};
+            if (!p.conquistas[conqId]) {
+                p.conquistas[conqId] = { desbloqueada: false, progresso_atual: 0 };
+            }
+
+            // Se já tá desbloqueada, não faz sentido somar
+            if (p.conquistas[conqId].desbloqueada && progresso > 0) {
+                 return res.status(400).json({ message: 'Esse maluco já tem essa conquista, caralho!' });
+            }
+
+            // Matemática do progresso
+            p.conquistas[conqId].progresso_atual += progresso;
+
+            // Evita progresso negativo bizarro
+            if (p.conquistas[conqId].progresso_atual < 0) p.conquistas[conqId].progresso_atual = 0;
+
+            let mensagem = `Progresso de '${conqInfo.nome}' atualizado para ${p.conquistas[conqId].progresso_atual}.`;
+
+            // Lógica de Desbloqueio
+            if (conqInfo.tipos.includes('progresso')) {
+                const max = conqInfo.progresso_max || 10; // Fallback pra 10 se esquecer
+                if (p.conquistas[conqId].progresso_atual >= max) {
+                    p.conquistas[conqId].desbloqueada = true;
+                    p.conquistas[conqId].progresso_atual = max; // Trava no máximo
+                    mensagem = `🎉 PUTA MERDA! Conquista '${conqInfo.nome}' DESBLOQUEADA!`;
+                } else {
+                    p.conquistas[conqId].desbloqueada = false; // Caso tu remova progresso e ele perca a platina
+                }
+            } else {
+                // Se for Normal, Secreta, etc... qualquer valor > 0 desbloqueia
+                if (p.conquistas[conqId].progresso_atual >= 1) {
+                    p.conquistas[conqId].desbloqueada = true;
+                    p.conquistas[conqId].progresso_atual = 1;
+                    mensagem = `✅ Conquista '${conqInfo.nome}' dada ao otário com sucesso.`;
+                } else {
+                    p.conquistas[conqId].desbloqueada = false;
+                }
+            }
+
+            // Salva a alma corrompida
+            fs.writeFile(playersPath, JSON.stringify(players, null, 2), (err) => {
+                if (err) return res.status(500).json({ message: 'Erro ao salvar o JSON.' });
+                res.json({ message: mensagem });
+            });
+        });
+    });
+});
+
 // Inicia o servidor
 app.listen(PORT, () => {
     console.log(`Servidor Admin rodando na porta ${PORT}. Vai lá em http://localhost:${PORT} no teu navegador, porra!`);

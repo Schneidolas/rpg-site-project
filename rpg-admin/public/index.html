@@ -133,6 +133,23 @@
                             </div>
                         </div>
 
+                        <!-- Gerenciador de Conquistas -->
+                        <h3>🏆 Conquistas da Alma</h3>
+                        <div class="form-group" style="background: #1a1a1a; padding: 15px; border-radius: 5px; border: 1px solid #444;">
+                            <label>Atribuir / Atualizar Conquista:</label>
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
+                                <select id="select-add-conquista" style="flex: 2;"></select>
+                                <input type="number" id="input-progresso-conquista" placeholder="+ Progresso" value="1" style="flex: 1; width: 80px;" title="Use números negativos para remover progresso">
+                                <button type="button" id="btn-atualizar-conquista" style="background-color: #fca311; color: black; flex: 1;">Atualizar</button>
+                            </div>
+                            <small style="color: #aaa;">* Se a conquista for "Normal", qualquer progresso > 0 a desbloqueia direto. Se for de "Progresso", ele soma ao valor atual.</small>
+                            
+                            <h4 style="margin: 15px 0 5px 0; color: #888; border-bottom: 1px dashed #333; padding-bottom: 5px;">Progresso Atual do Jogador:</h4>
+                            <div id="lista-conquistas-jogador" style="max-height: 150px; overflow-y: auto; font-size: 0.9em; padding-right: 5px;">
+                                <p style="color: #555;">Selecione um jogador...</p>
+                            </div>
+                        </div>
+
                         <!-- Personalização -->
                         <h3>Personalização</h3>
                         

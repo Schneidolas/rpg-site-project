@@ -1,12 +1,9 @@
 // --- CONFIGURAÇÕES GERAIS ---
 let todosPlayers = [];
 
-// Função pra evitar que o código quebre se um elemento não existir
 const getEl = (id) => document.getElementById(id);
 
-// --- INICIALIZAÇÃO ---
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Luna OS carregada. Iniciando rituais de administração...");
     carregarDadosGerais();
     configurarEventos();
 });
@@ -14,10 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- CARREGAMENTO DE DADOS ---
 async function carregarDadosGerais() {
     const fetchSafe = async (url) => {
-        try {
-            const res = await fetch(url);
-            return res.ok ? await res.json() : [];
-        } catch (e) { return []; }
+        try { const res = await fetch(url); return res.ok ? await res.json() : []; } 
+        catch (e) { return []; }
     };
 
     const [players, cartas, colecionaveis, insignias, conquistas] = await Promise.all([
@@ -30,52 +25,47 @@ async function carregarDadosGerais() {
 
     todosPlayers = players;
 
-    // Preencher Selects de Jogadores
-    const selectsPlayer = ['select-player-editor', 'select-player-insignia', 'select-player-conquista'];
-    selectsPlayer.forEach(id => {
-        const el = getEl(id);
-        if (el) {
-            el.innerHTML = '<option value="">-- Selecione --</option>';
-            players.forEach(p => el.innerHTML += `<option value="${p.id}">${p.nome}</option>`);
-        }
-    });
+    // Preenche Jogadores
+    const selEditor = getEl('select-player-editor');
+    if (selEditor) {
+        selEditor.innerHTML = '<option value="">-- Selecione --</option>';
+        players.forEach(p => selEditor.innerHTML += `<option value="${p.id}">${p.nome}</option>`);
+    }
 
-    // Preencher Select de Cartas
+    // Preenche Cartas e Fragmentos
     const selAddCarta = getEl('select-add-carta');
     if (selAddCarta) {
         selAddCarta.innerHTML = '';
         cartas.forEach(c => selAddCarta.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
     }
 
-    // Preencher Select de Fragmentos/Colecionáveis
     const selAddFrag = getEl('select-add-fragmento');
     if (selAddFrag) {
         selAddFrag.innerHTML = '';
         colecionaveis.forEach(col => selAddFrag.innerHTML += `<option value="${col.id}">${col.nome}</option>`);
     }
 
-    // Preencher Select de Insígnias e Conquistas (Atribuição)
-    const selIns = getEl('select-insignia');
-    if (selIns) {
-        selIns.innerHTML = '';
-        insignias.forEach(i => selIns.innerHTML += `<option value="${i.id}">${i.nome}</option>`);
-    }
-
-    const selConq = getEl('select-conquista');
-    if (selConq) {
-        selConq.innerHTML = '';
-        conquistas.forEach(c => selConq.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
+    // Preenche NOVO dropdown de Conquistas
+    const selAddConq = getEl('select-add-conquista');
+    if (selAddConq) {
+        selAddConq.innerHTML = '';
+        conquistas.forEach(c => {
+            const isProgresso = c.tipos.includes('progresso') ? '(Progresso)' : '(Normal)';
+            selAddConq.innerHTML += `<option value="${c.id}">${c.nome} ${isProgresso}</option>`;
+        });
     }
 }
 
 // --- CONFIGURAÇÃO DE EVENTOS (BOTÕES) ---
 function configurarEventos() {
-    // 1. Mostrar Editor de Almas ao selecionar jogador
+    
+    // 1. Mostrar Editor ao selecionar jogador
     const selEditor = getEl('select-player-editor');
     if (selEditor) {
         selEditor.addEventListener('change', () => {
             const player = todosPlayers.find(p => p.id === selEditor.value);
             const container = getEl('editor-container');
+            
             if (player && container) {
                 getEl('editor-nome-jogador').textContent = `Editando: ${player.nome}`;
                 getEl('edit-nivel').value = player.nivel || 1;
@@ -83,11 +73,12 @@ function configurarEventos() {
                 getEl('edit-moedas').value = player.moedas || 0;
                 getEl('edit-tickets').value = player.tickets || 0;
                 getEl('edit-elo').value = player.elo || 1000;
-                getEl('edit-cor-nome').value = (player.personalizacao && player.personalizacao.cor_nome) || '#ffffff';
-                getEl('edit-titulo').value = (player.personalizacao && player.personalizacao.titulo) || '';
+                
+                const perso = player.personalizacao || {};
+                getEl('edit-cor-nome').value = perso.cor_nome || '#ffffff';
+                getEl('edit-titulo').value = perso.titulo || '';
 
-                // --- ADICIONE ESTA PARTE PARA O AVATAR ---
-                const avatarBase64 = (player.personalizacao && player.personalizacao.avatar_url) || '';
+                const avatarBase64 = perso.avatar_url || '';
                 getEl('edit-avatar').value = avatarBase64;
                 const prevAvatar = getEl('prev-avatar');
                 if (avatarBase64) {
@@ -96,7 +87,10 @@ function configurarEventos() {
                 } else {
                     prevAvatar.style.display = 'none';
                 }
-                // -----------------------------------------
+
+                // Renderiza Progresso de Conquistas Atual
+                atualizarListaConquistasVisual(player);
+
                 container.style.display = 'block';
             } else if (container) {
                 container.style.display = 'none';
@@ -109,7 +103,6 @@ function configurarEventos() {
     if (btnSalvar) {
         btnSalvar.addEventListener('click', async () => {
             const playerId = getEl('select-player-editor').value;
-            // Adiciona o avatar_url no objeto de personalizacao
             const dados = {
                 nivel: parseInt(getEl('edit-nivel').value),
                 xp: parseInt(getEl('edit-xp').value),
@@ -119,25 +112,22 @@ function configurarEventos() {
                 personalizacao: {
                     cor_nome: getEl('edit-cor-nome').value,
                     titulo: getEl('edit-titulo').value,
-                    avatar_url: getEl('edit-avatar').value // <--- LINHA NOVA AQUI
+                    avatar_url: getEl('edit-avatar').value
                 }
             };
             const res = await fetch(`/api/player/${playerId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
             });
-            
-            // --- CÓDIGO NOVO AQUI ---
             if (res.ok) {
                 getEl('status-editor').textContent = "Alma salva com sucesso!";
                 getEl('status-editor').style.color = 'lightgreen';
             } else {
                 const errData = await res.json();
-                getEl('status-editor').textContent = "Erro: " + (errData.message || "Servidor recusou a foto. Muito grande?");
+                getEl('status-editor').textContent = "Erro: " + (errData.message || "Erro desconhecido.");
                 getEl('status-editor').style.color = 'tomato';
             }
-            // -------------------------
         });
     }
 
@@ -159,12 +149,10 @@ function configurarEventos() {
             });
             if (res.ok) {
                 const data = await res.json();
-                // Atualiza campos
                 getEl('edit-xp').value = data.player.xp;
                 getEl('edit-moedas').value = data.player.moedas;
                 getEl('edit-tickets').value = data.player.tickets;
                 getEl('edit-elo').value = data.player.elo;
-                // Limpa campos de add
                 ['add-xp', 'add-moedas', 'add-tickets', 'add-elo'].forEach(id => getEl(id).value = '');
             }
         });
@@ -172,43 +160,79 @@ function configurarEventos() {
 
     // 4. Adicionar Carta e Fragmento
     const btnCarta = getEl('btn-add-carta');
-    if (btnCarta) {
-        btnCarta.addEventListener('click', () => {
-            const itemId = getEl('select-add-carta').value;
-            adicionarItem('carta', itemId);
-        });
-    }
-
+    if (btnCarta) btnCarta.addEventListener('click', () => adicionarItem('carta', getEl('select-add-carta').value));
+    
     const btnFrag = getEl('btn-add-fragmento');
-    if (btnFrag) {
-        btnFrag.addEventListener('click', () => {
-            const itemId = getEl('select-add-fragmento').value;
-            adicionarItem('fragmento', itemId);
+    if (btnFrag) btnFrag.addEventListener('click', () => adicionarItem('fragmento', getEl('select-add-fragmento').value));
+
+    // 5. ATUALIZAR CONQUISTA (O BOTÃO QUE TAVA QUEBRADO)
+    const btnConq = getEl('btn-atualizar-conquista');
+    if (btnConq) {
+        btnConq.addEventListener('click', async () => {
+            const playerId = getEl('select-player-editor').value;
+            const conqId = getEl('select-add-conquista').value;
+            const progresso = parseInt(getEl('input-progresso-conquista').value) || 0;
+
+            if (!playerId || !conqId) return alert("Selecione o jogador e a conquista, seu animal!");
+
+            const res = await fetch(`/api/player/${playerId}/conquista`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ conqId, progresso })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                alert(data.message);
+                // Atualiza a lista visual na hora
+                await carregarDadosGerais(); 
+                getEl('select-player-editor').dispatchEvent(new Event('change')); 
+            } else {
+                const err = await res.json();
+                alert("Erro: " + err.message);
+            }
         });
     }
 
-    // 5. Criadores (Conquista, Insígnia, Carta, Colecionável)
+    // 6. Criadores
     configurarFormulario('form-conquista', '/api/conquistas', 'status');
     configurarFormulario('form-insignia', '/api/insignias', 'status-insignia');
     configurarFormulario('form-carta', '/api/cartas', 'status-carta');
     configurarFormulario('form-colecionavel', '/api/colecionaveis', 'status-colecionavel');
 
-    // Lógica específica pra Conquista (checkboxes)
+    // Lógica checkboxes Conquista
     const chkSecreta = getEl('tipo-secreta');
-    if (chkSecreta) {
-        chkSecreta.addEventListener('change', () => {
-            getEl('campos-secretos').style.display = chkSecreta.checked ? 'block' : 'none';
-        });
-    }
+    if (chkSecreta) chkSecreta.addEventListener('change', () => getEl('campos-secretos').style.display = chkSecreta.checked ? 'block' : 'none');
+    
     const chkProgresso = getEl('tipo-progresso');
-    if (chkProgresso) {
-        chkProgresso.addEventListener('change', () => {
-            getEl('campo-progresso').style.display = chkProgresso.checked ? 'block' : 'none';
-        });
-    }
+    if (chkProgresso) chkProgresso.addEventListener('change', () => getEl('campo-progresso').style.display = chkProgresso.checked ? 'block' : 'none');
 }
 
 // --- FUNÇÕES AUXILIARES ---
+
+function atualizarListaConquistasVisual(player) {
+    const divConqProg = getEl('lista-conquistas-jogador');
+    if (!divConqProg) return;
+
+    divConqProg.innerHTML = '';
+    if (player.conquistas && Object.keys(player.conquistas).length > 0) {
+        for (const [id, dados] of Object.entries(player.conquistas)) {
+            let nomeConq = id;
+            try {
+                const todasConq = Array.from(getEl('select-add-conquista').options).map(o => ({id: o.value, nome: o.text}));
+                const c = todasConq.find(x => x.id === id);
+                if (c) nomeConq = c.nome.replace(' (Progresso)', '').replace(' (Normal)', '');
+            } catch(e){}
+
+            const status = dados.desbloqueada ? '<span style="color:lightgreen">✅ Desbloqueada</span>' : `<span style="color:orange">⏳ Progresso: ${dados.progresso_atual}</span>`;
+            divConqProg.innerHTML += `<div style="padding: 5px; border-bottom: 1px solid #333; display: flex; justify-content: space-between;">
+                <span>${nomeConq}</span> ${status}
+            </div>`;
+        }
+    } else {
+        divConqProg.innerHTML = '<p style="color:#555">Nenhuma conquista iniciada.</p>';
+    }
+}
 
 async function adicionarItem(tipo, itemId) {
     const playerId = getEl('select-player-editor').value;
@@ -228,12 +252,8 @@ function configurarFormulario(formId, url, statusId) {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        // Coleta automática de dados do form
-        const formData = new FormData(form);
         const data = {};
         
-        // Lógica manual pra garantir IDs corretos (baseado no que já fizemos)
         if (formId === 'form-conquista') {
             data.id = `conq_${Date.now()}`;
             data.nome = getEl('nome').value;
@@ -272,16 +292,16 @@ function configurarFormulario(formId, url, statusId) {
 
         const statusEl = getEl(statusId);
         if (res.ok) {
-            if (statusEl) statusEl.textContent = "Salvo com sucesso!";
+            if (statusEl) { statusEl.textContent = "Salvo com sucesso!"; statusEl.style.color = "lightgreen"; }
             form.reset();
-            carregarDadosGerais(); // Recarrega os menus!
+            carregarDadosGerais(); 
         } else {
-            if (statusEl) statusEl.textContent = "Erro ao salvar.";
+            if (statusEl) { statusEl.textContent = "Erro ao salvar."; statusEl.style.color = "tomato"; }
         }
     });
 }
 
-// --- CONVERSOR DE IMAGEM PARA BASE64 (Automático) ---
+// --- CONVERSOR DE IMAGEM PARA BASE64 ---
 document.addEventListener('change', function(e) {
     if (e.target && e.target.classList.contains('file-to-base64')) {
         const file = e.target.files[0];
@@ -289,18 +309,14 @@ document.addEventListener('change', function(e) {
 
         const reader = new FileReader();
         const targetId = e.target.getAttribute('data-target');
-        const previewId = targetId.replace('imagem', 'prev').replace('edit', 'prev'); // Gambiarra pra achar a img de preview
+        const previewId = targetId.replace('imagem', 'prev').replace('edit', 'prev');
 
         reader.onload = function() {
-            const base64String = reader.result;
             const targetInput = document.getElementById(targetId);
-            if (targetInput) targetInput.value = base64String;
+            if (targetInput) targetInput.value = reader.result;
             
             const prevImg = document.getElementById(previewId);
-            if(prevImg) { 
-                prevImg.src = base64String; 
-                prevImg.style.display = 'block'; 
-            }
+            if(prevImg) { prevImg.src = reader.result; prevImg.style.display = 'block'; }
         };
         reader.readAsDataURL(file);
     }

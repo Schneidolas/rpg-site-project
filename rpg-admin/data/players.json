@@ -8,7 +8,16 @@
     "tickets": 0,
     "elo": 1000,
     "insignias": [],
-    "conquistas": {},
+    "conquistas": {
+      "conq_001": {
+        "desbloqueada": true,
+        "progresso_atual": 1
+      },
+      "conq_002": {
+        "desbloqueada": false,
+        "progresso_atual": 10
+      }
+    },
     "estrelas_raspadinha": {},
     "inventario_tcg": {
       "card_1774636114554": 1
