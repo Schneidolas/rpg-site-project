@@ -123,11 +123,21 @@ function configurarEventos() {
                 }
             };
             const res = await fetch(`/api/player/${playerId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dados)
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
             });
-            if (res.ok) alert("Alma salva com sucesso!");
+            
+            // --- CÓDIGO NOVO AQUI ---
+            if (res.ok) {
+                getEl('status-editor').textContent = "Alma salva com sucesso!";
+                getEl('status-editor').style.color = 'lightgreen';
+            } else {
+                const errData = await res.json();
+                getEl('status-editor').textContent = "Erro: " + (errData.message || "Servidor recusou a foto. Muito grande?");
+                getEl('status-editor').style.color = 'tomato';
+            }
+            // -------------------------
         });
     }
 
@@ -270,24 +280,6 @@ function configurarFormulario(formId, url, statusId) {
         }
     });
 }
-
-
-// Converte imagem em string Base64 pro banco de dados
-document.querySelectorAll('.file-to-base64').forEach(input => {
-    input.addEventListener('change', function() {
-        const reader = new FileReader();
-        const targetId = this.getAttribute('data-target');
-        const previewId = targetId.replace('imagem', 'prev'); // Pega o ID da img de preview
-
-        reader.onload = function() {
-            document.getElementById(targetId).value = reader.result;
-            const prev = document.getElementById(previewId);
-            if(prev) { prev.src = reader.result; prev.style.display = 'block'; }
-        };
-        reader.readAsDataURL(this.files[0]);
-    });
-});
-
 
 // --- CONVERSOR DE IMAGEM PARA BASE64 (Automático) ---
 document.addEventListener('change', function(e) {

@@ -6,7 +6,8 @@ const app = express();
 const PORT = 3000; // Nosso admin vai rodar em http://localhost:3000
 
 // Middlewares
-app.use(express.json()); // Pra entender JSON vindo do front
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true })); // Pra entender JSON vindo do front
 app.use(express.static('public')); // Pra servir os arquivos da pasta 'public' (index.html, admin.js)
 
 const conquistasPath = path.join(__dirname, 'data', 'conquistas.json');
