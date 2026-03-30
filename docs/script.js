@@ -1,116 +1,113 @@
 // docs/script.js
 
 function onScanSuccess(decodedText) {
-    const scannerElement = document.getElementById('reader');
-    if (scannerElement) scannerElement.style.display = 'none';
-
-    let playerID;
-    try { playerID = atob(decodedText); } 
-    catch (e) {
-        alert("Selo inválido (Erro Base64)!");
-        location.reload(); return;
-    }
-    buscarJogador(playerID);
+    buscarJogador(atob(decodedText));
 }
 
 function loginManual() {
     const inputId = document.getElementById('input-manual-id').value.trim();
-    if (!inputId) return alert("Digite o ID, herege!");
-    buscarJogador(inputId);
+    if (inputId) buscarJogador(inputId);
 }
 
 function buscarJogador(playerID) {
     fetch('database.json')
-        .then(res => res.json())
+        .then(res => res.ok ? res.json() : Promise.reject('Falha ao carregar banco de dados'))
         .then(data => {
-            const listaDeJogadores = data.players || [];
-            const player = listaDeJogadores.find(p => p.id === playerID);
-            
+            const player = (data.players || []).find(p => p.id === playerID);
             if (player) {
-                // Passamos o 'data' inteiro pra poder buscar infos de cartas/insígnias
                 mostrarPerfil(player, data);
             } else {
-                alert(`Alma não encontrada!`);
-                location.reload();
+                alert(`Jogador com ID "${playerID}" não encontrado.`);
             }
-        }).catch(err => alert("Erro ao ler o grimório: " + err));
+        }).catch(err => {
+            console.error(err);
+            alert("Erro: " + err);
+        });
 }
 
 function mostrarPerfil(p, db) {
+    // Esconde login, mostra dashboard
     document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('perfil-jogador').style.display = 'block';
+    document.getElementById('perfil-jogador').style.display = 'grid';
 
-    // Header Básico
-    const elNome = document.getElementById('p-nome');
-    elNome.textContent = p.nome;
-    if (p.personalizacao && p.personalizacao.cor_nome) elNome.style.color = p.personalizacao.cor_nome;
-    document.getElementById('p-titulo').textContent = (p.personalizacao && p.personalizacao.titulo) ? p.personalizacao.titulo : "Novato";
+    // --- POPULANDO A BARRA LATERAL ---
+    document.getElementById('p-nome').textContent = p.nome;
+    document.getElementById('p-titulo').textContent = (p.personalizacao && p.personalizacao.titulo) || 'Aventureiro';
+    if(p.personalizacao && p.personalizacao.avatar_url) { // Campo novo
+        document.getElementById('p-avatar').src = p.personalizacao.avatar_url;
+    }
 
-    // Stats
     document.getElementById('p-moedas').textContent = p.moedas || 0;
     document.getElementById('p-tickets').textContent = p.tickets || 0;
     document.getElementById('p-elo').textContent = p.elo || 1000;
 
-    // MATEMÁTICA DO XP E NÍVEL
-    const nivelAtual = p.nivel || 1;
-    const xpAtual = p.xp || 0;
-    // Fórmula: (Nível ^ 1.5) * 500
-    const xpNecessario = Math.floor(Math.pow(nivelAtual, 1.5) * 500);
-    const porcentagem = Math.min(100, (xpAtual / xpNecessario) * 100);
+    const nivel = p.nivel || 1;
+    const xp = p.xp || 0;
+    const xpNecessario = Math.floor(Math.pow(nivel, 1.5) * 500);
+    const porcentagemXp = Math.min(100, (xp / xpNecessario) * 100);
 
-    document.getElementById('p-nivel').textContent = nivelAtual;
-    document.getElementById('p-xp-texto').textContent = `${xpAtual} / ${xpNecessario} XP`;
-    document.getElementById('p-xp-bar').style.width = `${porcentagem}%`;
+    document.getElementById('p-nivel').textContent = nivel;
+    document.getElementById('p-xp-texto').textContent = `${xp} / ${xpNecessario} XP`;
+    document.getElementById('p-xp-bar').style.width = `${porcentagemXp}%`;
 
-    // RENDERIZAR INSÍGNIAS
-    const divInsignias = document.getElementById('lista-insignias');
+    // --- POPULANDO O CONTEÚDO PRINCIPAL ---
+    
+    // Insígnias
+    const insigniasContainer = document.getElementById('lista-insignias');
+    insigniasContainer.innerHTML = '';
     if (p.insignias && p.insignias.length > 0) {
-        divInsignias.innerHTML = ''; // Limpa o "fraco"
         p.insignias.forEach(id => {
             const insigniaDB = (db.insignias || []).find(i => i.id === id);
             if (insigniaDB) {
-                // Se o ícone for base64 ou url, joga no src
-                divInsignias.innerHTML += `<img src="${insigniaDB.imagem}" title="${insigniaDB.nome}" class="item-icon" alt="${insigniaDB.nome}">`;
+                insigniasContainer.innerHTML += `
+                    <div class="icon-item" title="${insigniaDB.nome}">
+                        <img src="${insigniaDB.imagem}" alt="${insigniaDB.nome}">
+                        <span>${insigniaDB.nome}</span>
+                    </div>
+                `;
             }
         });
+    } else {
+        insigniasContainer.innerHTML = '<p style="color:var(--text-secondary);">Nenhuma insígnia.</p>';
     }
 
-    // RENDERIZAR INVENTÁRIO TCG
-    const divTcg = document.getElementById('lista-tcg');
-    if (p.inventario_tcg && Object.keys(p.inventario_tcg).length > 0) {
-        divTcg.innerHTML = '';
-        for (const [cartaId, quantidade] of Object.entries(p.inventario_tcg)) {
-            const cartaDB = (db.cartas || []).find(c => c.id === cartaId);
-            if (cartaDB) {
-                divTcg.innerHTML += `<div class="item-card"><img src="${cartaDB.imagem}" class="item-icon"> <b>${cartaDB.nome}</b> (x${quantidade})</div>`;
-            }
-        }
-    }
-
-    // RENDERIZAR COLECIONÁVEIS
-    const divCol = document.getElementById('lista-colecionaveis');
-    if (p.fragmentos_colecionaveis && Object.keys(p.fragmentos_colecionaveis).length > 0) {
-        divCol.innerHTML = '';
-        for (const [colId, qtd] of Object.entries(p.fragmentos_colecionaveis)) {
-            const colDB = (db.colecionaveis || []).find(c => c.id === colId);
-            if (colDB) {
-                const max = colDB.fragmentos_necessarios || '???';
-                divCol.innerHTML += `<div class="item-card">🧩 <b>${colDB.nome}</b>: ${qtd} / ${max} fragmentos</div>`;
-            }
-        }
-    }
-
-    // RENDERIZAR CONQUISTAS (Simplificado por agora)
-    const divConq = document.getElementById('lista-conquistas');
+    // Conquistas
+    const conquistasContainer = document.getElementById('lista-conquistas');
+    conquistasContainer.innerHTML = '';
     if (p.conquistas && Object.keys(p.conquistas).length > 0) {
-        divConq.innerHTML = '';
-        for (const [conqId, dadosConq] of Object.entries(p.conquistas)) {
-            const conqDB = (db.conquistas || []).find(c => c.id === conqId);
+        for (const [id, dados] of Object.entries(p.conquistas)) {
+            const conqDB = (db.conquistas || []).find(c => c.id === id);
             if (conqDB) {
-                let status = dadosConq.desbloqueada ? "✅ Desbloqueada" : `🔒 Progresso: ${dadosConq.progresso_atual}`;
-                divConq.innerHTML += `<div class="item-card">🏆 <b>${conqDB.nome}</b> - ${status}</div>`;
+                const status = dados.desbloqueada ? 'Desbloqueada' : `Progresso: ${dados.progresso_atual || 0}`;
+                conquistasContainer.innerHTML += `<div class="list-item"><strong>${conqDB.nome}</strong><span>- ${status}</span></div>`;
             }
         }
+    } else {
+        conquistasContainer.innerHTML = '<p style="color:var(--text-secondary);">Nenhuma conquista.</p>';
+    }
+
+    // Inventário (TCG + Colecionáveis)
+    const inventarioContainer = document.getElementById('lista-inventario');
+    inventarioContainer.innerHTML = '';
+    let hasItems = false;
+    // Cartas TCG
+    if (p.inventario_tcg) {
+        hasItems = true;
+        for (const [id, qtd] of Object.entries(p.inventario_tcg)) {
+            const cartaDB = (db.cartas || []).find(c => c.id === id);
+            if(cartaDB) inventarioContainer.innerHTML += `<div class="list-item">🃏 ${cartaDB.nome} (x${qtd})</div>`;
+        }
+    }
+    // Fragmentos
+    if (p.fragmentos_colecionaveis) {
+        hasItems = true;
+        for (const [id, qtd] of Object.entries(p.fragmentos_colecionaveis)) {
+            const colDB = (db.colecionaveis || []).find(c => c.id === id);
+            if(colDB) inventarioContainer.innerHTML += `<div class="list-item">🧩 ${colDB.nome} (${qtd}/${colDB.fragmentos_necessarios} Fragmentos)</div>`;
+        }
+    }
+    if (!hasItems) {
+        inventarioContainer.innerHTML = '<p style="color:var(--text-secondary);">Mochila vazia.</p>';
     }
 }
 
